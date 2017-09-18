@@ -125,7 +125,11 @@ static void *ivshm_net_desc_data(struct ivshm_net *in,
 {
 	u64 offs = READ_ONCE(desc->addr);
 	u32 dlen = READ_ONCE(desc->len);
+	u16 flags = READ_ONCE(desc->flags);
 	void *data;
+
+	if (flags)
+		return NULL;
 
 	if (offs >= in->shmlen)
 		return NULL;
@@ -161,7 +165,6 @@ static void ivshm_net_init_queues(struct net_device *ndev)
 	int ivpos = readl(&in->ivshm_regs->ivpos);
 	void *tx;
 	void *rx;
-	int i;
 
 	tx = in->shm +  ivpos * in->shmlen / 2;
 	rx = in->shm + !ivpos * in->shmlen / 2;
@@ -172,9 +175,6 @@ static void ivshm_net_init_queues(struct net_device *ndev)
 	ivshm_net_init_queue(in, &in->tx, tx, in->qlen);
 
 	in->tx.num_free = in->tx.vr.num;
-
-	for (i = 0; i < in->tx.vr.num - 1; i++)
-		in->tx.vr.desc[i].next = i + 1;
 }
 
 static int ivshm_net_calc_qsize(struct net_device *ndev)
@@ -317,6 +317,7 @@ static int ivshm_net_tx_frame(struct net_device *ndev, struct sk_buff *skb)
 
 	desc->addr = buf - in->shm;
 	desc->len = skb->len;
+	desc->flags = 0;
 
 	avail = tx->last_avail_idx++ & (vr->num - 1);
 	vr->avail->ring[avail] = desc_idx;
