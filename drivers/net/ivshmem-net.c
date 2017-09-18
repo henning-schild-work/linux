@@ -171,8 +171,6 @@ static void ivshm_net_init_queues(struct net_device *ndev)
 	ivshm_net_init_queue(in, &in->rx, rx, in->qlen);
 	ivshm_net_init_queue(in, &in->tx, tx, in->qlen);
 
-	swap(in->rx.vr.used, in->tx.vr.used);
-
 	in->tx.num_free = in->tx.vr.num;
 
 	for (i = 0; i < in->tx.vr.num - 1; i++)
